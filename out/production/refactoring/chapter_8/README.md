@@ -339,24 +339,6 @@ class Main {
 
 예제를 보는 것이 이해에 도움이 될 것 같다.
 
-Main 클래스만 좀 비교를 해보겠다. 원본 Main 클래스는 아래와 같다.
-```java
-public static void main(String[] args) {
-        Person personA = new Person(Person.A);
-        int bloodGroup = personA.getBloodGroup();
-        personA.setBloodGroup(Person.AB);
-    }
-```
-보면 사람의 혈액형을 설정하는데, 혈액형의 값을 Person 클래스의 필드로 설정하고 있다. 아래 코드를 보자.
-```java
-public static void main(String[] args) {
-        Person personA = new Person(BloodGroup.A);
-        int bloodGroupCode = personA.getBloodGroupCode();
-        personA.setBloodGroup(BloodGroup.AB);
-    }
-```
-훨씬 자연스럽다. 각 클래스 세부 코드는 알아서 보자.
-
 ## 분류 부호를 하위클래스로 전환 Replace Type Code with Subclasses
 ## 분류 부호를 상태/전략 패턴으로 전환 Replace Type Code with State/Strategy
 ## 하위클래스를 필드로 전환 Replace Subclass with Fields
