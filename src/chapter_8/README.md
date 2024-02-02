@@ -358,5 +358,152 @@ public static void main(String[] args) {
 훨씬 자연스럽다. 각 클래스 세부 코드는 알아서 보자.
 
 ## 분류 부호를 하위클래스로 전환 Replace Type Code with Subclasses
+> 클래스 기능에 영향을 주는 변경불가 분류 부호가 있을 땐, 분류 부호를 하위클래스로 만들자.'
+
+`Employee`라는 클래스에 `ENGINEER`와 `SALESMAN`이라는 두 개 분류가 있었다 가정하자. 그럼 이걸 그냥 하위클래스로 만들어 상속 관계를 만들자는 것이다.
+하위클래스로 만드는 이유는 클래스 기능에 영향을 주기 때문이다. 기능에 영향을 주지 않는다면 앞서 설명한 방법을 활용하자.
+
+분류 부호가 클래스 기능에 영향을 미치는 현상은 case 문 같은 조건문이 있을 때 주로 나타난다. 요고 한 번 예시코드로 보자.
+
+```java
+public class OriginEmployee {
+    private int type;
+
+    static final int ENGINEER = 0;
+    static final int SALESMAN = 1;
+    static final int MANAGER = 2;
+
+    OriginEmployee(int type) {
+        this.type = type;
+    }
+}
+```
+`OriginEmployee` 클래스이다. 타입 분류를 enum 으로 관리한다. 
+그리고 각 역할별로 기능이 분명 다를 것 같다.
+이럴 땐 하위 클래스로 만드는 것이 좋다.
+
+```java
+public abstract class Employee {
+    private int type;
+
+    static final int ENGINEER = 0;
+    static final int SALESMAN = 1;
+    static final int MANAGER = 2;
+
+    static Employee create(int type) {
+        if (type == ENGINEER) return new Engineer();
+        if (type == SALESMAN) return new SalesMan();
+        if (type == MANAGER) return new Manager();
+        throw new IllegalArgumentException("분류 부호 값이 잘못됨.");
+    }
+    
+    Employee() {
+        this.type = this.getType();
+    }
+
+    abstract int getType();
+}
+```
+우선, 기존에 생성자가 분류부호를 인자로 받고 있었기 때문에 팩토리 메서드로 수정했다.
+그리고 각 `Engineer, Salesman, Manager` 클래스가 `Employee` 클래스를 상속 받도록 구성했다.
+
+Main 클래스를 보자.
+```java
+public static void main(String[] args) {
+        Employee engineer = Employee.create(Employee.ENGINEER);
+        SalesMan salesman = (SalesMan) Employee.create(Employee.SALESMAN);
+        Employee manager = Employee.create(Employee.MANAGER);
+    }
+```
+이렇게 각 분류부호에 따른 객체를 생성할 수 있는데, 타입 캐스팅도 가능하다.
+
+분류 부호를 하위 클래스로 전환하는 것의 장점은 클래스 사용 부분에 있던 다형적인 기능 곤련 데이터가 클래스 자체로 이동한다는 데 있다.
+변형된 새 기능을 추가할 땐 하위 클래스만 하나 추가하면 되기 때문이다.
+다형성, 즉 재정의를 이용하지 않는다면 조건문을 전부 찾아서 일일이 수정해야 한다. 이 리팩토링 기법의 가치는 다형적인 기능이 수시로 변할 때 특히 빛난다.
+
 ## 분류 부호를 상태/전략 패턴으로 전환 Replace Type Code with State/Strategy
+> 분류 부호가 클래스의 기능에 영향을 주지만 하위 클래스로 전환할 수 없을 땐, 그 분류 부호를 상태 객체로 만들자.
+
+분류 부호를 하위클래스로 전환하는 방법과 비슷하지만, 분류 부호가 객체 수명주기동안 변할 때나 다른 이유로 하위클래스로 만들 수 없을 때 사용한다.
+
+위 예제를 다시 활용할 것인데, 조건이 조금 다르다. 직급이 언제든 변할 수가 있다. 승진도 가능하고 강등도 가능하다.
+
+```java
+int payAmount() {
+        if (type == ENGINEER) return monthlySalary;
+        if (type == SALESMAN) return monthlySalary + commission;
+        if (type == MANAGER) return monthlySalary + bonus;
+        throw new IllegalArgumentException("분류 부호 값이 잘못됨.");
+    }
+```
+`Employee` 클래스에 위와 같은 메서드가 추가되었다.
+
+상태 클래스 `EmployeeType` 클래스를 선언해보자. 상태 클래스는 `abstract`.
+그리고 그 하위클래스로 `Salesman, Manager, Engineer` 클래스를 만들자.
+
+기존에 Employee 클래스에 int type 으로 선언했던 필드를 EmployeeType type 으로 수정하자.
+그리고 분류부호도 EmployeeType 클래스로 밀어넣자.
+
+```java
+package chapter_8.replace_type_code_with_state_strategy;
+
+public class Employee {
+    private EmployeeType type;
+    private int monthlySalary;
+    private int commission;
+    private int bonus;
+
+    void setType(int arg) {
+        type = EmployeeType.newType(arg);
+    }
+
+    int getType() {
+        return type.getTypeCode();
+    };
+
+    public Employee(int type) {
+        setType(type);
+    }
+
+    int payAmount() {
+        if (getType() == EmployeeType.ENGINEER) return monthlySalary;
+        if (getType() == EmployeeType.SALESMAN) return monthlySalary + commission;
+        if (getType() == EmployeeType.MANAGER) return monthlySalary + bonus;
+        throw new IllegalArgumentException("분류 부호 값이 잘못됨.");
+    }
+}
+
+```
+
+```java
+package chapter_8.replace_type_code_with_state_strategy;
+
+public abstract class EmployeeType {
+    abstract int getTypeCode();
+
+    static final int ENGINEER = 0;
+    static final int SALESMAN = 1;
+    static final int MANAGER = 2;
+
+    static EmployeeType newType(int code) {
+        if (code == EmployeeType.ENGINEER) return new Engineer();
+        if (code == EmployeeType.SALESMAN) return new Salesman();
+        if (code == EmployeeType.MANAGER) return new Manager();
+        throw new IllegalArgumentException("분류 부호가 잘못됨.");
+    }
+}
+```
+
+```java
+public static void main(String[] args) {
+        Employee engineer = new Employee(EmployeeType.ENGINEER);
+        Employee salesman = new Employee(EmployeeType.SALESMAN);
+        Employee manger = new Employee(EmployeeType.MANAGER);
+    }
+```
+위와 같이 수정할 수 있다.
+
 ## 하위클래스를 필드로 전환 Replace Subclass with Fields
+> 여러 하위클래스가 상수 데이터를 반환하는 메서드만 다룰 땐, 각 하위클래스의 메서드를 상위 클래스의 필드로 전환하고 하위클래스는 전부 삭제하자.
+
+위에서 다룬 기법들의 반대 과정이라고 보면 될 것 같다. 굳이 따로 다루진 않겠다.
